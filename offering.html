@@ -228,6 +228,7 @@ h3 { font-family:'Schibsted Grotesk',sans-serif; font-size:17px; font-weight:700
 .revbox.big .rv{font-size:18px;}
 .srcbadge{display:inline-block;font-size:11px;font-weight:600;background:#e7effb;color:#1e50a8;padding:3px 10px;border-radius:20px;margin:2px 0 8px;}
 .inp:disabled{background:#f3f5f8;color:#5f6470;cursor:not-allowed;}
+.srchr{display:flex;gap:8px;align-items:center;}
 .navrow{justify-content:flex-start;}
 .srchd{justify-content:space-between;}
 .srchd .inp{max-width:340px;}
@@ -510,6 +511,17 @@ h3 { font-family:'Schibsted Grotesk',sans-serif; font-size:17px; font-weight:700
     getMarketBenchmark: async function (entity, grade, jobFamily) {
       if (CLOUD) { var r = await client.rpc("fn_get_market_benchmark", { p_entity: entity, p_grade: grade, p_job_family: jobFamily || null }); if (r.error) throw r.error; return r.data || null; }
       return localMaster(LOCAL_MARKET, entity, grade);
+    },
+
+    initDirectOl: async function (subject, ol) {
+      if (CLOUD) {
+        var r = await client.rpc("fn_init_direct_ol", { p_code: subject.code, p_name: subject.name || null, p_position: subject.position || null, p_subject_type: subject.subjectType, p_ol: ol });
+        if (r.error) throw r.error; return r.data;
+      }
+      var a = lsLoad();
+      if (a.some(function (c) { return c.code === subject.code; })) throw new Error("code exists");
+      a.push({ code: subject.code, name: subject.name || (subject.subjectType === "POSITION_ONLY" ? "(Posisi tanpa nama)" : "Kandidat langsung"), email: "", position: subject.position || "", origin: "COMBEN_DIRECT", subject_type: subject.subjectType, stage: "OL_REVIEW", flk: null, ol: Object.assign({}, ol, { approvals: [] }), agreement: null, createdAt: new Date().toISOString() });
+      lsSave(a); return { ok: true, code: subject.code, stage: "OL_REVIEW", origin: "COMBEN_DIRECT" };
     }
   };
 
@@ -1082,6 +1094,18 @@ function App() {
   var _retNote = useState("");
   var retNote = _retNote[0],
     setRetNote = _retNote[1];
+  var _initOpen = useState(false);
+  var initOpen = _initOpen[0],
+    setInitOpen = _initOpen[1];
+  var _initType = useState("NEW_HIRE");
+  var initType = _initType[0],
+    setInitType = _initType[1];
+  var _initName = useState("");
+  var initName = _initName[0],
+    setInitName = _initName[1];
+  var _initPos = useState("");
+  var initPos = _initPos[0],
+    setInitPos = _initPos[1];
   function refresh() {
     DB.shortlisted().then(function (a) {
       setList(a);
@@ -1193,6 +1217,38 @@ function App() {
     o[k] = v;
     setCal(o);
   }
+  function pickDirect() {
+    if (initType === "NEW_HIRE" && !initName.trim()) {
+      setMsg("Isi nama kandidat untuk direct hire.");
+      return;
+    }
+    var code = "DIR-" + Math.random().toString(36).slice(2, 8).toUpperCase();
+    var nm = initType === "POSITION_ONLY" ? "(Posisi tanpa nama)" : initName.trim();
+    setSel({
+      code: code,
+      name: nm,
+      position: initPos.trim(),
+      direct: true,
+      subjectType: initType,
+      origin: "COMBEN_DIRECT"
+    });
+    setMsg("");
+    setReason("");
+    setUseP2(false);
+    setGrade("");
+    setEntity("");
+    setFinalPos(initPos.trim());
+    setStart("");
+    setMpp("");
+    setMpn("");
+    setStat("NEW");
+    setRepl("");
+    setExp("");
+    setRem("");
+    setVals(emptyVals());
+    setCal(emptyCal());
+    setInitOpen(false);
+  }
   function thpBefore(col) {
     return num(vals.basic[col]) + num(vals.mgmt[col]) + num(vals.premi[col]);
   }
@@ -1227,6 +1283,10 @@ function App() {
       setMsg("Angka di luar rentang wajar, tuliskan alasan sebelum submit.");
       return;
     }
+    if (sel && sel.direct && (!mpp.trim() || !mpn.trim())) {
+      setMsg("Jalur langsung melewati seleksi FLK, jadi MPP Index dan MPN Number wajib diisi.");
+      return;
+    }
     var makerA = makerAuthority(grade),
       chain = chainAuth(grade);
     function comp(col) {
@@ -1257,6 +1317,8 @@ function App() {
       entity: entity,
       finalPosition: finalPos,
       startDate: start,
+      origin: sel && sel.direct ? "COMBEN_DIRECT" : "FLK",
+      subjectType: sel && sel.direct ? sel.subjectType : null,
       basicData: {
         mppIndex: mpp,
         mpnNumber: mpn,
@@ -1336,7 +1398,13 @@ function App() {
     };
     setBusy(true);
     setMsg("");
-    DB.submitOl(sel.code, ol).then(function () {
+    var action = sel && sel.direct ? window.HCMSApi.initDirectOl({
+      code: sel.code,
+      name: sel.name,
+      position: finalPos,
+      subjectType: sel.subjectType
+    }, ol) : DB.submitOl(sel.code, ol);
+    action.then(function () {
       setBusy(false);
       setSel(null);
       setMsg("OL terkirim ke persetujuan " + chain.map(function (a) {
@@ -1457,6 +1525,42 @@ function App() {
   }, "Persetujuan"));
   function renderMaker() {
     if (sel) return renderForm();
+    if (initOpen) {
+      return /*#__PURE__*/React.createElement("div", {
+        className: "card"
+      }, /*#__PURE__*/React.createElement("div", {
+        className: "cb"
+      }, /*#__PURE__*/React.createElement("div", {
+        className: "sechd"
+      }, "Inisiasi OL langsung, tanpa FLK"), /*#__PURE__*/React.createElement("div", {
+        className: "note2"
+      }, "Jalur ini melewati seleksi FLK. Sebagai penggantinya, MPP Index dan MPN Number wajib, dan rantai persetujuan tetap berlaku penuh sesuai grade."), /*#__PURE__*/React.createElement("label", {
+        className: "lbl2"
+      }, "Jenis subjek", /*#__PURE__*/React.createElement("select", {
+        className: "inp",
+        value: initType,
+        onChange: function (e) {
+          setInitType(e.target.value);
+        }
+      }, /*#__PURE__*/React.createElement("option", {
+        value: "NEW_HIRE"
+      }, "Direct hire, kandidat dari luar FLK"), /*#__PURE__*/React.createElement("option", {
+        value: "POSITION_ONLY"
+      }, "Position only, anggaran posisi belum ada orangnya"))), initType === "NEW_HIRE" ? fld("Nama kandidat", initName, setInitName, "nama lengkap") : null, fld("Posisi", initPos, setInitPos, "nama posisi"), msg ? /*#__PURE__*/React.createElement("div", {
+        className: "banner"
+      }, msg) : null, /*#__PURE__*/React.createElement("div", {
+        className: "formact"
+      }, /*#__PURE__*/React.createElement("button", {
+        className: "btn red",
+        onClick: pickDirect
+      }, "Lanjut ke OL"), /*#__PURE__*/React.createElement("button", {
+        className: "btn sm ghost",
+        onClick: function () {
+          setInitOpen(false);
+          setMsg("");
+        }
+      }, "Batal"))));
+    }
     var qq = q.trim().toLowerCase();
     var rows = list.filter(function (c) {
       return !qq || (c.name || "").toLowerCase().indexOf(qq) >= 0 || (c.code || "").toLowerCase().indexOf(qq) >= 0 || (c.position || "").toLowerCase().indexOf(qq) >= 0;
@@ -1469,16 +1573,27 @@ function App() {
       className: "srchd"
     }, /*#__PURE__*/React.createElement("div", {
       className: "sechd"
-    }, "Kandidat Lolos Seleksi"), /*#__PURE__*/React.createElement("input", {
+    }, "Kandidat Lolos Seleksi"), /*#__PURE__*/React.createElement("div", {
+      className: "srchr"
+    }, /*#__PURE__*/React.createElement("button", {
+      className: "btn sm ghost",
+      onClick: function () {
+        setInitOpen(true);
+        setInitType("NEW_HIRE");
+        setInitName("");
+        setInitPos("");
+        setMsg("");
+      }
+    }, "Inisiasi OL langsung"), /*#__PURE__*/React.createElement("input", {
       className: "inp narrow",
       placeholder: "Cari nama, kode, atau posisi",
       value: q,
       onChange: function (e) {
         setQ(e.target.value);
       }
-    })), rows.length === 0 ? /*#__PURE__*/React.createElement("div", {
+    }))), rows.length === 0 ? /*#__PURE__*/React.createElement("div", {
       className: "empty"
-    }, "Belum ada kandidat berstatus Lolos Seleksi. TA meloloskan kandidat di FLK Online.") : /*#__PURE__*/React.createElement("table", {
+    }, "Belum ada kandidat berstatus Lolos Seleksi. Loloskan dari FLK Online, atau pakai Inisiasi OL langsung untuk jalur Comben.") : /*#__PURE__*/React.createElement("table", {
       className: "tbl"
     }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", null, "Nama"), /*#__PURE__*/React.createElement("th", null, "Kode"), /*#__PURE__*/React.createElement("th", null, "Posisi dilamar"), /*#__PURE__*/React.createElement("th", null))), /*#__PURE__*/React.createElement("tbody", null, rows.map(function (c) {
       return /*#__PURE__*/React.createElement("tr", {
@@ -1585,7 +1700,9 @@ function App() {
       className: "cb"
     }, /*#__PURE__*/React.createElement("div", {
       className: "sechd"
-    }, "A. Basic Data"), /*#__PURE__*/React.createElement("div", {
+    }, "A. Basic Data"), sel.direct ? /*#__PURE__*/React.createElement("div", {
+      className: "srcbadge"
+    }, "Inisiasi langsung Comben, ", sel.subjectType === "POSITION_ONLY" ? "position only" : "direct hire", ". MPP Index dan MPN Number wajib.") : null, /*#__PURE__*/React.createElement("div", {
       className: "grid2"
     }, /*#__PURE__*/React.createElement("div", {
       className: "revbox"
@@ -1921,10 +2038,10 @@ function App() {
       className: "btn red",
       disabled: busy,
       onClick: submit
-    }, busy ? "Menyimpan..." : "Submit ke persetujuan"), /*#__PURE__*/React.createElement("button", {
+    }, busy ? "Menyimpan..." : "Submit ke persetujuan"), !sel.direct ? /*#__PURE__*/React.createElement("button", {
       className: "btn sm ghost",
       onClick: askCorrection
-    }, "Minta koreksi identitas ke TA")));
+    }, "Minta koreksi identitas ke TA") : null));
   }
   function renderApprove() {
     if (viewCode) return renderReview();
