@@ -1,10 +1,4 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Budget Offering, One HCMS</title>
-<style>
+<!DOCTYPE html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Budget Offering, One HCMS</title><style>
 @import url('https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@600;700;800&family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap');
 * { box-sizing:border-box; margin:0; padding:0; }
 body { font-family:'Geist',system-ui,sans-serif; background:#f5f6f8; color:#1F242C; }
@@ -232,9 +226,9 @@ h3 { font-family:'Schibsted Grotesk',sans-serif; font-size:17px; font-weight:700
 .navrow{justify-content:flex-start;}
 .srchd{justify-content:space-between;}
 .srchd .inp{max-width:340px;}
-</style>
-</head>
-<body>
+
+.oltbl thead th.finalcol{background:#fceceb;color:#b5231d;}
+</style></head><body>
 <div id="root"></div>
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -561,8 +555,7 @@ render:a}};c.isValidElement=M;c.lazy=function(a){return{$$typeof:Aa,_payload:{_s
 c.useEffect=function(a,b){return g.current.useEffect(a,b)};c.useId=function(){return g.current.useId()};c.useImperativeHandle=function(a,b,c){return g.current.useImperativeHandle(a,b,c)};c.useInsertionEffect=function(a,b){return g.current.useInsertionEffect(a,b)};c.useLayoutEffect=function(a,b){return g.current.useLayoutEffect(a,b)};c.useMemo=function(a,b){return g.current.useMemo(a,b)};c.useReducer=function(a,b,c){return g.current.useReducer(a,b,c)};c.useRef=function(a){return g.current.useRef(a)};
 c.useState=function(a){return g.current.useState(a)};c.useSyncExternalStore=function(a,b,c){return g.current.useSyncExternalStore(a,b,c)};c.useTransition=function(){return g.current.useTransition()};c.version="18.3.1"});
 })();
-</script>
-<script>/**
+</script><script>/**
  * @license React
  * react-dom.production.min.js
  *
@@ -830,8 +823,7 @@ var d=null!=c&&c.hydratedSources||null,e=!1,f="",g=aj;null!==c&&void 0!==c&&(!0=
 function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmountComponentAtNode=function(a){if(!Vd(a))throw Error(m(40));return a._reactRootContainer?(yb(function(){Wd(null,null,a,!1,function(){a._reactRootContainer=null;a[Ja]=null})}),!0):!1};Q.unstable_batchedUpdates=Tf;Q.unstable_renderSubtreeIntoContainer=function(a,b,c,d){if(!Vd(c))throw Error(m(200));if(null==a||void 0===a._reactInternals)throw Error(m(38));return Wd(a,b,c,!1,d)};Q.version="18.3.1-next-f1338f8080-20240426"});
 })();
 </script>
-<script>
-// Budget Offering, Nabati One HCMS. Connected to the shared database.
+<script>// Budget Offering, Nabati One HCMS. Connected to the shared database.
 // Susun OL follows the Comben template: A Basic Data, B Management Allowance
 // monthly with Current and Proposal columns, C Annual, D grand total, plus the
 // wage calibration panel as a guide, and a graduated signature block.
@@ -887,9 +879,11 @@ function componentsFor(grade, gender) {
   if (t === "G4") return gender === "L" ? ["gapok", "tjab", "thadir"] : ["gapok", "tjab", "thadir", "tkom", "ttrans"];
   return ["gapok", "tjab", "thadir", "tkom", "ttrans"];
 }
-function statusKekaryawanan(grade) {
+function statusKekaryawanan(grade, locType) {
   var t = olTier(grade);
-  return t === "G3" || t === "LOW" ? "PKWT dengan masa kontrak 6 Bulan" : "PKWTT dengan masa Probation 3 Bulan";
+  if (t === "G3" || t === "LOW") return "PKWT dengan masa kontrak 6 Bulan";
+  if (t === "G4" && locType === "PLANT") return "PKWT dengan masa kontrak 6 Bulan";
+  return "PKWTT dengan masa Probation 3 Bulan";
 }
 function olSheet(grade, gender) {
   var t = olTier(grade);
@@ -952,13 +946,23 @@ function chainAuth(g) {
 function isID(entity) {
   return /^ID/i.test(entity || "");
 }
-function bpjsEmployee(basic, entity) {
+// BPJS wage caps, updated yearly by Comben. Slot for a master parameter later.
+var BPJS_KES_CAP = 12000000;
+var BPJS_JP_CAP = 10042300;
+function bpjsTK(basic, entity) {
   if (!isID(entity)) return 0;
   basic = num(basic);
-  var kesehatan = Math.min(basic, 12000000) * 0.01;
   var jht = basic * 0.02;
-  var jp = Math.min(basic, 10042300) * 0.01;
-  return Math.round(kesehatan + jht + jp);
+  var jp = Math.min(basic, BPJS_JP_CAP) * 0.01;
+  return Math.round(jht + jp);
+}
+function bpjsKes(basic, entity) {
+  if (!isID(entity)) return 0;
+  basic = num(basic);
+  return Math.round(Math.min(basic, BPJS_KES_CAP) * 0.01);
+}
+function bpjsEmployee(basic, entity) {
+  return bpjsTK(basic, entity) + bpjsKes(basic, entity);
 }
 function pctInc(cur, val) {
   cur = num(cur);
@@ -1016,7 +1020,9 @@ function emptyVals() {
     o[k] = {
       c: "",
       p1: "",
-      p2: ""
+      p2: "",
+      p3: "",
+      p4: ""
     };
   });
   return o;
@@ -1088,6 +1094,9 @@ function App() {
   var _loc = useState("");
   var loc = _loc[0],
     setLoc = _loc[1];
+  var _locType = useState("OFFICE");
+  var locType = _locType[0],
+    setLocType = _locType[1];
   var _start = useState("");
   var start = _start[0],
     setStart = _start[1];
@@ -1112,9 +1121,12 @@ function App() {
   var _vals = useState(emptyVals());
   var vals = _vals[0],
     setVals = _vals[1];
-  var _p2 = useState(false);
-  var useP2 = _p2[0],
-    setUseP2 = _p2[1];
+  var _np = useState(1);
+  var nProp = _np[0],
+    setNProp = _np[1];
+  var _fp = useState("p1");
+  var finalProp = _fp[0],
+    setFinalProp = _fp[1];
   var _cal = useState(emptyCal());
   var cal = _cal[0],
     setCal = _cal[1];
@@ -1231,7 +1243,9 @@ function App() {
     setSel(c);
     setMsg("");
     setReason("");
-    setUseP2(false);
+    setNProp(1);
+    setFinalProp("p1");
+    setLocType("OFFICE");
     setGrade("");
     setEntity("");
     setFinalPos(c.position || "");
@@ -1276,7 +1290,9 @@ function App() {
     });
     setMsg("");
     setReason("");
-    setUseP2(false);
+    setNProp(1);
+    setFinalProp("p1");
+    setLocType("OFFICE");
     setGrade("");
     setEntity("");
     setFinalPos(initPos.trim());
@@ -1302,6 +1318,16 @@ function App() {
       n: COMP[k].note
     };
   });
+  var PLABEL = {
+    p1: "p1",
+    p2: "p2",
+    p3: "p3",
+    p4: "p4"
+  };
+  var activeProps = ["p1", "p2", "p3", "p4"].slice(0, nProp);
+  function pClass(p) {
+    return p === "p1" ? "p1c" : "p2c";
+  }
   function thpBefore(col) {
     var s = 0;
     activeKeys.forEach(function (k) {
@@ -1321,7 +1347,7 @@ function App() {
   function annualTot(col) {
     return thpBefore(col) * 12 + thrAmt(col);
   }
-  var bm = num(vals.gapok.p1);
+  var bm = num(vals.gapok[finalProp] !== undefined ? vals.gapok[finalProp] : vals.gapok.p1);
   var compa = num(cal.midG) > 0 ? bm / num(cal.midG) : 0;
   var pen = num(cal.maxG) > num(cal.minG) ? (bm - num(cal.minG)) / (num(cal.maxG) - num(cal.minG)) * 100 : 0;
   var mkt = num(cal.p50) > 0 ? bm / num(cal.p50) : 0;
@@ -1373,6 +1399,25 @@ function App() {
       });
       return o;
     }
+    function propObj(col) {
+      return {
+        components: compObj(col),
+        totalRemun: thpBefore(col),
+        thr: thrAmt(col),
+        bpjsTK: bpjsTK(vals.gapok[col], entity),
+        bpjsKes: bpjsKes(vals.gapok[col], entity),
+        bpjsEmployee: empDed(col),
+        thpAfter: thpAfter(col),
+        annualTotal: annualTot(col)
+      };
+    }
+    var props = {
+      current: propObj("c"),
+      final: finalProp
+    };
+    activeProps.forEach(function (p) {
+      props[p] = propObj(p);
+    });
     var ol = {
       grade: grade,
       entity: entity,
@@ -1389,39 +1434,17 @@ function App() {
         remarks: rem,
         division: divi,
         workLocation: loc,
+        locationType: locType,
         gender: gender,
-        statusKekaryawanan: statusKekaryawanan(grade)
+        statusKekaryawanan: statusKekaryawanan(grade, locType)
       },
       olTemplate: {
         tier: olTier(grade),
         sheet: olSheet(grade, gender),
         componentKeys: activeKeys
       },
-      comp: comp("p1"),
-      proposals: {
-        p1: {
-          components: compObj("p1"),
-          totalRemun: thpBefore("p1"),
-          thr: thrAmt("p1"),
-          bpjsEmployee: empDed("p1"),
-          thpAfter: thpAfter("p1"),
-          annualTotal: annualTot("p1")
-        },
-        p2: useP2 ? {
-          components: compObj("p2"),
-          totalRemun: thpBefore("p2"),
-          thr: thrAmt("p2"),
-          bpjsEmployee: empDed("p2"),
-          thpAfter: thpAfter("p2"),
-          annualTotal: annualTot("p2")
-        } : null,
-        current: {
-          components: compObj("c"),
-          totalRemun: thpBefore("c"),
-          thr: thrAmt("c"),
-          annualTotal: annualTot("c")
-        }
-      },
+      comp: comp(finalProp),
+      proposals: props,
       calibration: {
         structure: {
           min: num(cal.minG),
@@ -1701,19 +1724,17 @@ function App() {
       key: r.k
     }, /*#__PURE__*/React.createElement("td", {
       className: "olL"
-    }, r.l), /*#__PURE__*/React.createElement("td", null, money(r.k, "c")), /*#__PURE__*/React.createElement("td", {
-      className: "p1c"
-    }, money(r.k, "p1")), /*#__PURE__*/React.createElement("td", {
-      className: "calc"
-    }, dash(num(vals[r.k].p1) - num(vals[r.k].c))), /*#__PURE__*/React.createElement("td", {
-      className: "calc"
-    }, pctInc(vals[r.k].c, vals[r.k].p1)), useP2 ? /*#__PURE__*/React.createElement("td", {
-      className: "p2c"
-    }, money(r.k, "p2")) : null, useP2 ? /*#__PURE__*/React.createElement("td", {
-      className: "calc"
-    }, dash(num(vals[r.k].p2) - num(vals[r.k].c))) : null, useP2 ? /*#__PURE__*/React.createElement("td", {
-      className: "calc"
-    }, pctInc(vals[r.k].c, vals[r.k].p2)) : null, /*#__PURE__*/React.createElement("td", {
+    }, r.l), /*#__PURE__*/React.createElement("td", null, money(r.k, "c")), activeProps.map(function (p) {
+      return React.createElement(React.Fragment, {
+        key: p
+      }, /*#__PURE__*/React.createElement("td", {
+        className: pClass(p)
+      }, money(r.k, p)), /*#__PURE__*/React.createElement("td", {
+        className: "calc"
+      }, dash(num(vals[r.k][p]) - num(vals[r.k].c))), /*#__PURE__*/React.createElement("td", {
+        className: "calc"
+      }, pctInc(vals[r.k].c, vals[r.k][p])));
+    }), /*#__PURE__*/React.createElement("td", {
       className: "olN"
     }, r.n));
   }
@@ -1724,28 +1745,28 @@ function App() {
       className: "olL"
     }, label), /*#__PURE__*/React.createElement("td", {
       className: "calc"
-    }, dash(fnCol("c"))), /*#__PURE__*/React.createElement("td", {
-      className: "calc"
-    }, dash(fnCol("p1"))), /*#__PURE__*/React.createElement("td", {
-      className: "calc"
-    }, dash(fnCol("p1") - fnCol("c"))), /*#__PURE__*/React.createElement("td", {
-      className: "calc"
-    }, num(fnCol("c")) > 0 ? Math.round((fnCol("p1") - fnCol("c")) / fnCol("c") * 100) + "%" : "-"), useP2 ? /*#__PURE__*/React.createElement("td", {
-      className: "calc"
-    }, dash(fnCol("p2"))) : null, useP2 ? /*#__PURE__*/React.createElement("td", {
-      className: "calc"
-    }, dash(fnCol("p2") - fnCol("c"))) : null, useP2 ? /*#__PURE__*/React.createElement("td", {
-      className: "calc"
-    }, num(fnCol("c")) > 0 ? Math.round((fnCol("p2") - fnCol("c")) / fnCol("c") * 100) + "%" : "-") : null, /*#__PURE__*/React.createElement("td", null));
+    }, dash(fnCol("c"))), activeProps.map(function (p) {
+      return React.createElement(React.Fragment, {
+        key: p
+      }, /*#__PURE__*/React.createElement("td", {
+        className: "calc"
+      }, dash(fnCol(p))), /*#__PURE__*/React.createElement("td", {
+        className: "calc"
+      }, dash(fnCol(p) - fnCol("c"))), /*#__PURE__*/React.createElement("td", {
+        className: "calc"
+      }, num(fnCol("c")) > 0 ? Math.round((fnCol(p) - fnCol("c")) / fnCol("c") * 100) + "%" : "-"));
+    }), /*#__PURE__*/React.createElement("td", null));
   }
   function olHead() {
     return /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", {
       className: "olL"
-    }, "Components"), /*#__PURE__*/React.createElement("th", null, "Current"), /*#__PURE__*/React.createElement("th", {
-      className: "p1c"
-    }, "Nabati Proposal 1"), /*#__PURE__*/React.createElement("th", null, "Inc (Rp)"), /*#__PURE__*/React.createElement("th", null, "% Inc"), useP2 ? /*#__PURE__*/React.createElement("th", {
-      className: "p2c"
-    }, "Nabati Proposal 2") : null, useP2 ? /*#__PURE__*/React.createElement("th", null, "Inc (Rp)") : null, useP2 ? /*#__PURE__*/React.createElement("th", null, "% Inc") : null, /*#__PURE__*/React.createElement("th", {
+    }, "Components"), /*#__PURE__*/React.createElement("th", null, "Current"), activeProps.map(function (p, i) {
+      return React.createElement(React.Fragment, {
+        key: p
+      }, /*#__PURE__*/React.createElement("th", {
+        className: pClass(p) + (finalProp === p ? " finalcol" : "")
+      }, "Nabati Proposal ", i + 1, finalProp === p ? ", final" : ""), /*#__PURE__*/React.createElement("th", null, "Inc (Rp)"), /*#__PURE__*/React.createElement("th", null, "% Inc"));
+    }), /*#__PURE__*/React.createElement("th", {
       className: "olN"
     }, "Notes")));
   }
@@ -1820,6 +1841,18 @@ function App() {
       }, x);
     }))), fld("Divisi atau Departemen", divi, setDivi, "divisi"), fld("Lokasi Kerja", loc, setLoc, "kota"), /*#__PURE__*/React.createElement("label", {
       className: "lbl2"
+    }, "Tipe lokasi", /*#__PURE__*/React.createElement("select", {
+      className: "inp",
+      value: locType,
+      onChange: function (e) {
+        setLocType(e.target.value);
+      }
+    }, /*#__PURE__*/React.createElement("option", {
+      value: "OFFICE"
+    }, "Office"), /*#__PURE__*/React.createElement("option", {
+      value: "PLANT"
+    }, "Plant"))), /*#__PURE__*/React.createElement("label", {
+      className: "lbl2"
     }, "Jenis kelamin", /*#__PURE__*/React.createElement("select", {
       className: "inp",
       value: gender,
@@ -1842,7 +1875,7 @@ function App() {
       value: "NEW"
     }, "New"), /*#__PURE__*/React.createElement("option", {
       value: "REPLACEMENT"
-    }, "Replacement"))), stat === "REPLACEMENT" ? fld("Nama yang digantikan", repl, setRepl, "nama karyawan") : null, fld("Tanggal mulai", start, setStart, "", "date"), /*#__PURE__*/React.createElement("label", {
+    }, "Replacement"))), stat === "REPLACEMENT" ? fld("Nama yang digantikan", repl, setRepl, "nama karyawan") : null, fld("Tanggal rencana mulai kerja", start, setStart, "", "date"), /*#__PURE__*/React.createElement("label", {
       className: "lbl2"
     }, "Expected Salary", /*#__PURE__*/React.createElement("input", {
       className: "inp",
@@ -1854,7 +1887,7 @@ function App() {
       placeholder: "dari kandidat"
     }))), fld("Remarks", rem, setRem, "catatan"), grade ? /*#__PURE__*/React.createElement("div", {
       className: "srcbadge"
-    }, "Template OL, ", olSheet(grade, gender), ". Status kekaryawanan, ", statusKekaryawanan(grade), ".") : null, grade ? /*#__PURE__*/React.createElement("div", {
+    }, "Template OL, ", olSheet(grade, gender), ". Status kekaryawanan, ", statusKekaryawanan(grade, locType), ".") : null, grade ? /*#__PURE__*/React.createElement("div", {
       className: "note2"
     }, "Maker, ", proposedBy.title, ". Rantai persetujuan, ", chain.map(function (a) {
       return PERSON[a].title;
@@ -1868,19 +1901,50 @@ function App() {
       className: "oltbl-wrap"
     }, /*#__PURE__*/React.createElement("table", {
       className: "oltbl"
-    }, olHead(), /*#__PURE__*/React.createElement("tbody", null, activeRows.map(compRow), totRow("Total Remunerasi (sebelum potongan BPJS)", thpBefore, true), totRow("Tunjangan Hari Raya (Gaji ke 13)", thrAmt, false), totRow("THP (net) setelah BPJS, internal", thpAfter, false)))), isID(entity) ? /*#__PURE__*/React.createElement("div", {
+    }, olHead(), /*#__PURE__*/React.createElement("tbody", null, activeRows.map(compRow), totRow("Total Remunerasi (sebelum potongan BPJS)", thpBefore, true), totRow("Tunjangan Hari Raya (Gaji ke 13)", thrAmt, false), totRow("Potongan BPJS Ketenagakerjaan (JHT 2 persen + JP 1 persen)", function (col) {
+      return bpjsTK(vals.gapok[col], entity);
+    }, false), totRow("Potongan BPJS Kesehatan (1 persen)", function (col) {
+      return bpjsKes(vals.gapok[col], entity);
+    }, false), totRow("THP (net) setelah BPJS", thpAfter, true)))), isID(entity) ? /*#__PURE__*/React.createElement("div", {
       className: "note2"
-    }, "Potongan BPJS karyawan dihitung dari Gaji Pokok untuk entity Indonesia, JHT 2 persen, JP 1 persen, Kesehatan 1 persen, dengan batas atas upah. THR mengikuti template, Gaji Pokok plus Tunjangan Jabatan plus Tunjangan Kehadiran.") : /*#__PURE__*/React.createElement("div", {
+    }, "Potongan BPJS karyawan dihitung dari Gaji Pokok, BPJS Ketenagakerjaan JHT 2 persen ditambah JP 1 persen dengan batas upah, dan BPJS Kesehatan 1 persen dengan batas upah. THR mengikuti template, Gaji Pokok plus Tunjangan Jabatan plus Tunjangan Kehadiran.") : /*#__PURE__*/React.createElement("div", {
       className: "note2"
-    }, "Entity non-Indonesia, potongan wajib per negara menyusul."), /*#__PURE__*/React.createElement("label", {
-      className: "chk"
-    }, /*#__PURE__*/React.createElement("input", {
-      type: "checkbox",
-      checked: useP2,
-      onChange: function (e) {
-        setUseP2(e.target.checked);
+    }, "Entity non-Indonesia dipilih, potongan BPJS tidak berlaku. Pilih entity Indonesia bila ingin potongan otomatis."), /*#__PURE__*/React.createElement("div", {
+      className: "navrow",
+      style: {
+        marginTop: "10px"
       }
-    }), " Tampilkan skenario Nabati Proposal 2"))), /*#__PURE__*/React.createElement("div", {
+    }, /*#__PURE__*/React.createElement("button", {
+      className: "btn sm ghost",
+      disabled: nProp >= 4,
+      onClick: function () {
+        setNProp(nProp + 1);
+      }
+    }, "Tambah skenario"), /*#__PURE__*/React.createElement("button", {
+      className: "btn sm ghost",
+      disabled: nProp <= 1,
+      onClick: function () {
+        var n = nProp - 1;
+        setNProp(n);
+        if (["p1", "p2", "p3", "p4"].indexOf(finalProp) >= n) setFinalProp("p1");
+      }
+    }, "Kurangi skenario"), /*#__PURE__*/React.createElement("label", {
+      className: "lbl2",
+      style: {
+        marginBottom: 0
+      }
+    }, "Skenario final, yang menjadi OL", /*#__PURE__*/React.createElement("select", {
+      className: "inp",
+      value: finalProp,
+      onChange: function (e) {
+        setFinalProp(e.target.value);
+      }
+    }, activeProps.map(function (p, i) {
+      return /*#__PURE__*/React.createElement("option", {
+        key: p,
+        value: p
+      }, "Proposal ", i + 1);
+    })))))), /*#__PURE__*/React.createElement("div", {
       className: "card total-card"
     }, /*#__PURE__*/React.createElement("div", {
       className: "cb"
@@ -1892,15 +1956,9 @@ function App() {
       className: "revbox big"
     }, /*#__PURE__*/React.createElement("div", {
       className: "rk"
-    }, "Proposal 1, per tahun"), /*#__PURE__*/React.createElement("div", {
+    }, "Skenario final, per tahun"), /*#__PURE__*/React.createElement("div", {
       className: "rv mono"
-    }, dash(annualTot("p1")))), useP2 ? /*#__PURE__*/React.createElement("div", {
-      className: "revbox big"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "rk"
-    }, "Proposal 2, per tahun"), /*#__PURE__*/React.createElement("div", {
-      className: "rv mono"
-    }, dash(annualTot("p2")))) : /*#__PURE__*/React.createElement("div", {
+    }, dash(annualTot(finalProp)))), /*#__PURE__*/React.createElement("div", {
       className: "revbox big"
     }, /*#__PURE__*/React.createElement("div", {
       className: "rk"
@@ -2104,7 +2162,7 @@ function App() {
     var cl = ol.calibration || {};
     var m = cl.metrics || {};
     var pr = ol.proposals || {};
-    var p1 = pr.p1 || {};
+    var p1 = pr[pr.final] || pr.p1 || {};
     var sg = ol.signatories || {};
     return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("button", {
       className: "btn sm ghost mb",
@@ -2202,8 +2260,5 @@ function App() {
     className: "banner"
   }, msg) : null));
 }
-var __r = ReactDOM.createRoot(document.getElementById("root"));
-__r.render(React.createElement(App));
-</script>
-</body>
-</html>
+var __r=ReactDOM.createRoot(document.getElementById("root"));__r.render(React.createElement(App));</script>
+</body></html>
