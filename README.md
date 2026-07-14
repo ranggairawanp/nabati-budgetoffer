@@ -1,30 +1,39 @@
-# Budget Offering, Nabati One HCMS
+# Budget Offering, One HCMS
 
-Situs statis untuk penyusunan dan persetujuan Offering Letter, tersambung ke database bersama One HCMS. Terpisah dari FLK Online, tapi satu database.
+Aplikasi penyusunan dan persetujuan Offering Letter untuk Nabati Group.
+Statis, tanpa build step. Deploy sebagai Framework Other di Vercel.
 
-## Alamat
-- /offering, aplikasi. Root diarahkan ke sini.
+## Isi paket
+- index.html, pengalihan ke /offering
+- offering.html, aplikasi utama
+- config.js, koneksi Supabase
+- one_hcms_api.js, lapisan integrasi, mode cloud dan lokal
+- one_hcms_comp_master.sql, master struktur upah dan benchmark
+- one_hcms_comben_direct.sql, jalur inisiasi OL langsung oleh Comben
+- one_hcms_ol_fill.py, mesin pengisi template Offering Letter resmi
+- vercel.json, konfigurasi rute
 
-## Isi paket, semua di root
-offering.html, index.html, config.js, one_hcms_api.js, vercel.json, README.md.
+## Cara deploy
+Unggah seluruh berkas di root repo. Jangan tambahkan package.json atau folder src.
+Di Vercel, pilih Framework Preset Other, tanpa build command.
 
-## Deploy ke Vercel
-1. Repo baru yang bersih, tanpa package.json, vite, atau folder src.
-2. Unggah keenam berkas langsung ke root.
-3. Import di Vercel, Framework Preset akan terbaca Other, Deploy.
+## Akun demo
+onehcms, kata sandi nabatiHC-123!
+Peran, C&B Specialist, Corporate People Services, Chief People Officer, Group CEO.
 
-## Alur
-- Login lewat Supabase Auth. Peran menentukan maker atau approver.
-- Maker mencari kandidat berstatus Lolos Seleksi, identitas tertarik dari FLK sebagai prefill baca saja.
-- Maker mengisi grade, entity, posisi final, komponen kompensasi, dan panel Kalibrasi Upah, struktur internal, skala pasar eksternal, dan ekuitas internal grade dan divisi yang sama secara agregat berambang.
-- Compa ratio, range penetration, dan market ratio dihitung langsung. Bila di luar rentang wajar, alasan wajib diisi dan ikut ke approver.
-- Submit masuk rantai persetujuan berjenjang sesuai grade. Snapshot identitas dan kalibrasi dibekukan saat submit.
+## Fitur utama
+- Susun OL empat blok, Basic Data, Komponen Kompensasi, Kalibrasi Upah, Total per tahun
+- Komponen kompensasi resmi per tier grade dan gender, mengikuti template KSNI 2026
+- Status kekaryawanan otomatis, Grade 3 PKWT, Grade 4 di plant PKWT, selain itu PKWTT
+- Lokasi kerja berupa daftar, kelompok Plant, Head Office, dan Kota, tipe lokasi otomatis
+- Business Unit untuk entity Indonesia
+- Komponen tambahan sampai tiga baris, penambah atau pengurang, dengan penanda tampil di surat
+- Potongan BPJS Ketenagakerjaan dan Kesehatan terpisah, batas upah sebagai parameter
+- Skenario negosiasi sampai empat, dengan pemilih skenario final yang menjadi OL
+- Kalibrasi upah, struktur internal dan benchmark pasar, dengan ambang privasi peer minimal lima
+- Rantai persetujuan berjenjang mengikuti grade
+- Jalur inisiasi OL langsung oleh Comben, wajib MPP Index dan MPN Number
 
-## Akun demo, password nabatiHC-123!
-- cb.specialist@nabati.demo, maker grade dasar.
-- windha.cps@nabati.demo, maker senior dan approver dasar.
-- frans.cpo@nabati.demo, approver senior.
-- groupceo@nabati.demo, approver grade 6B.
-
-## Prasyarat database
-Jalankan one_hcms_supabase_setup.sql lalu one_hcms_selection_gate.sql di project Supabase yang sama dengan FLK Online. Gate seleksi ditegakkan di database, hanya kandidat Lolos Seleksi yang bisa dibuatkan OL.
+## Mesin pengisi Offering Letter
+one_hcms_ol_fill.py mengisi template resmi 2026, memilih sheet menurut tier grade dan gender,
+mempertahankan rumus Total dan THR, serta mencetak komponen tambahan yang ditandai tampil di surat.

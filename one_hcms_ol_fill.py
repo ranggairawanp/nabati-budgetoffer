@@ -114,6 +114,39 @@ def fill_ol(template_path, data, out_path):
                 ws.cell(row=r, column=6, value=amount)
                 break
 
+    # 4b. Komponen tambahan penambah yang bertanda tampil di surat.
+    # Disisipkan sebagai baris sebelum Total Remunerasi, gaya sel disalin dari
+    # baris komponen terakhir agar sama persis, lalu rumus Total ditulis ulang.
+    # THR tetap dari tiga komponen pertama, F31 sampai F33, tidak terpengaruh.
+    extras = [c for c in (data.get("customComponents") or []) if c.get("nature") == "ADD" and c.get("showOnLetter") and float(c.get("amount") or 0) > 0]
+    if extras:
+        from copy import copy
+        trows = _rows_with(ws, 2, "Total Remunerasi")
+        if trows:
+            total_row = trows[0]
+            for ex in extras:
+                ws.insert_rows(total_row)
+                src = total_row - 1
+                for m in list(ws.merged_cells.ranges):
+                    if str(m) == "B" + str(total_row) + ":E" + str(total_row):
+                        ws.merged_cells.ranges.discard(m)
+                for col in range(1, 8):
+                    s = ws.cell(row=src, column=col)
+                    dcell = ws.cell(row=total_row, column=col)
+                    if s.has_style:
+                        dcell.font = copy(s.font); dcell.border = copy(s.border); dcell.fill = copy(s.fill)
+                        dcell.number_format = s.number_format; dcell.alignment = copy(s.alignment); dcell.protection = copy(s.protection)
+                prev_no = ws.cell(row=src, column=2).value
+                try:
+                    no = int(prev_no) + 1
+                except Exception:
+                    no = ""
+                ws.cell(row=total_row, column=2, value=str(no))
+                ws.cell(row=total_row, column=3, value=ex.get("name"))
+                ws.cell(row=total_row, column=6, value=float(ex.get("amount")))
+                total_row += 1
+            ws.cell(row=total_row, column=6, value="=SUM(F31:F" + str(total_row - 1) + ")")
+
     # 5. Sign date, cell in col G containing Bandung,
     for r in range(1, ws.max_row + 1):
         v = ws.cell(row=r, column=7).value
