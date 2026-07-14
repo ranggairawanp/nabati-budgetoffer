@@ -76,6 +76,38 @@ def _set_offer(ws, label_col_b, value):
         ws.cell(row=hits[0], column=5, value=value)
 
 
+def from_ol_payload(ol, nomor_seq, sign_date):
+    """Build the fill data straight from an approved OL payload.
+    Identity comes from the frozen snapshot, so nothing is retyped."""
+    idn = ol.get("identity") or {}
+    bd = ol.get("basicData") or {}
+    tpl = ol.get("olTemplate") or {}
+    props = ol.get("proposals") or {}
+    final_key = props.get("final") or "p1"
+    final = props.get(final_key) or {}
+    labels = {"gapok": "Gaji Pokok", "tjab": "Tunjangan Jabatan", "thadir": "Tunjangan Kehadiran",
+              "tkom": "Tunjangan Komunikasi", "ttrans": "Tunjangan Transportasi", "tkend": "Tunjangan Pengganti Kendaraan"}
+    comps = {}
+    for k, v in (final.get("components") or {}).items():
+        if k in labels and v:
+            comps[labels[k]] = v
+    customs = final.get("customs") or {}
+    extras = []
+    for c in (tpl.get("customComponents") or []):
+        amt = customs.get(c.get("key")) or 0
+        if amt:
+            extras.append({"name": c.get("name"), "amount": amt, "nature": c.get("nature"), "showOnLetter": c.get("showOnLetter")})
+    return {
+        "grade": ol.get("grade"), "gender": idn.get("gender") or bd.get("gender") or "L",
+        "nomorSeq": nomor_seq, "signDate": sign_date,
+        "nama": idn.get("legalName", ""), "alamat": idn.get("address", ""),
+        "position": ol.get("finalPosition", ""), "division": bd.get("division", ""),
+        "golongan": ol.get("grade"), "location": bd.get("workLocation", ""),
+        "status": bd.get("statusKekaryawanan"),
+        "components": comps, "customComponents": extras
+    }
+
+
 def fill_ol(template_path, data, out_path):
     wb = openpyxl.load_workbook(template_path)
     sheet = ol_sheet(data.get("grade"), data.get("gender"))
